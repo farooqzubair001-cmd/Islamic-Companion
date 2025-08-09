@@ -1,0 +1,1451 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Islamic Companion - Your Digital Islamic Library</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        'arabic': ['Amiri', 'serif'],
+                        'sans': ['Inter', 'system-ui', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
+    <link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .rtl { direction: rtl; }
+        .ltr { direction: ltr; }
+        .fade-in { animation: fadeIn 0.5s ease-in; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        .pulse-gentle { animation: pulseGentle 2s infinite; }
+        @keyframes pulseGentle { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.05); } }
+        .slide-up { animation: slideUp 0.3s ease-out; }
+        @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+        .counter-button { transition: all 0.2s ease; }
+        .counter-button:active { transform: scale(0.95); }
+        .quote-card { transition: all 0.5s ease; }
+        .dark .bg-white { background-color: #1f2937; }
+        .dark .text-gray-900 { color: #f9fafb; }
+        .dark .text-gray-600 { color: #d1d5db; }
+        .dark .text-gray-700 { color: #e5e7eb; }
+        .dark .bg-gray-50 { background-color: #374151; }
+        .dark .bg-gray-100 { background-color: #4b5563; }
+        .dark .border-gray-200 { border-color: #4b5563; }
+        .dark .border-gray-300 { border-color: #6b7280; }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-blue-50 to-indigo-100 min-h-screen font-sans">
+    <!-- Firebase Config Status -->
+    <div id="configStatus" class="fixed top-4 right-4 z-50 bg-yellow-100 border border-yellow-400 text-yellow-700 px-4 py-2 rounded-lg">
+        <i class="fas fa-exclamation-triangle mr-2"></i>
+        <span>Please update Firebase configuration</span>
+    </div>
+
+    <!-- Authentication Section -->
+    <div id="authSection" class="min-h-screen flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-md fade-in">
+            <div class="text-center mb-8">
+                <div class="w-16 h-16 bg-gradient-to-r from-green-500 to-blue-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <i class="fas fa-mosque text-white text-2xl"></i>
+                </div>
+                <h1 class="text-3xl font-bold text-gray-900 mb-2">Islamic Companion</h1>
+                <p class="text-gray-600">Your digital Islamic library</p>
+            </div>
+
+            <!-- Login Form -->
+            <div id="loginForm">
+                <h2 class="text-2xl font-semibold text-gray-900 mb-6 text-center">Welcome Back</h2>
+                <form onsubmit="handleLogin(event)">
+                    <div class="mb-4">
+                        <label class="block text-gray-700 text-sm font-medium mb-2">Email Address</label>
+                        <input type="email" id="loginEmail" required 
+                               class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                               placeholder="Enter your email">
+                    </div>
+                    <div class="mb-6">
+                        <label class="block text-gray-700 text-sm font-medium mb-2">Password</label>
+                        <input type="password" id="loginPassword" required 
+                               class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                               placeholder="Enter your password">
+                    </div>
+                    <button type="submit" id="loginBtn"
+                            class="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white py-3 rounded-lg font-medium hover:from-blue-700 hover:to-indigo-700 transition-all transform hover:scale-105">
+                        <span class="login-text">Sign In</span>
+                        <span class="login-loading hidden">
+                            <i class="fas fa-spinner fa-spin mr-2"></i>Signing In...
+                        </span>
+                    </button>
+                </form>
+                <p class="text-center mt-6 text-gray-600">
+                    Don't have an account? 
+                    <button onclick="showSignup()" class="text-blue-600 hover:text-blue-700 font-medium">Sign up</button>
+                </p>
+            </div>
+
+            <!-- Signup Form -->
+            <div id="signupForm" class="hidden">
+                <h2 class="text-2xl font-semibold text-gray-900 mb-6 text-center">Create Account</h2>
+                <form onsubmit="handleSignup(event)">
+                    <div class="mb-4">
+                        <label class="block text-gray-700 text-sm font-medium mb-2">Full Name</label>
+                        <input type="text" id="signupName" required 
+                               class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all"
+                               placeholder="Enter your full name">
+                    </div>
+                    <div class="mb-4">
+                        <label class="block text-gray-700 text-sm font-medium mb-2">Email Address</label>
+                        <input type="email" id="signupEmail" required 
+                               class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all"
+                               placeholder="Enter your email">
+                    </div>
+                    <div class="mb-6">
+                        <label class="block text-gray-700 text-sm font-medium mb-2">Password</label>
+                        <input type="password" id="signupPassword" required minlength="6"
+                               class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all"
+                               placeholder="Create a password (min 6 characters)">
+                    </div>
+                    <button type="submit" id="signupBtn"
+                            class="w-full bg-gradient-to-r from-green-600 to-blue-600 text-white py-3 rounded-lg font-medium hover:from-green-700 hover:to-blue-700 transition-all transform hover:scale-105">
+                        <span class="signup-text">Create Account</span>
+                        <span class="signup-loading hidden">
+                            <i class="fas fa-spinner fa-spin mr-2"></i>Creating Account...
+                        </span>
+                    </button>
+                </form>
+                <p class="text-center mt-6 text-gray-600">
+                    Already have an account? 
+                    <button onclick="showLogin()" class="text-green-600 hover:text-green-700 font-medium">Sign in</button>
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main App -->
+    <div id="mainApp" class="hidden">
+        <!-- Header -->
+        <header class="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-50">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="flex justify-between items-center h-16">
+                    <div class="flex items-center space-x-4">
+                        <div class="w-10 h-10 bg-gradient-to-r from-green-500 to-blue-600 rounded-full flex items-center justify-center">
+                            <i class="fas fa-mosque text-white"></i>
+                        </div>
+                        <h1 class="text-xl font-bold text-gray-900">Islamic Companion</h1>
+                    </div>
+                    <div class="flex items-center space-x-4">
+                        <button onclick="toggleDarkMode()" class="p-2 rounded-lg hover:bg-gray-100 transition-colors">
+                            <i id="darkModeIcon" class="fas fa-moon text-gray-600"></i>
+                        </button>
+                        <button onclick="logout()" class="text-red-600 hover:text-red-700 font-medium">
+                            <i class="fas fa-sign-out-alt mr-2"></i>Logout
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Navigation -->
+        <nav class="bg-white border-b border-gray-200">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="flex space-x-8 overflow-x-auto">
+                    <button onclick="showSection('dashboard')" class="nav-btn py-4 px-2 border-b-2 border-blue-500 text-blue-600 font-medium whitespace-nowrap">
+                        <i class="fas fa-home mr-2"></i>Dashboard
+                    </button>
+                    <button onclick="showSection('quran')" class="nav-btn py-4 px-2 border-b-2 border-transparent text-gray-500 hover:text-gray-700 font-medium whitespace-nowrap">
+                        <i class="fas fa-book-open mr-2"></i>Quran
+                    </button>
+                    <button onclick="showSection('hadith')" class="nav-btn py-4 px-2 border-b-2 border-transparent text-gray-500 hover:text-gray-700 font-medium whitespace-nowrap">
+                        <i class="fas fa-scroll mr-2"></i>Hadith
+                    </button>
+                    <button onclick="showSection('zikr')" class="nav-btn py-4 px-2 border-b-2 border-transparent text-gray-500 hover:text-gray-700 font-medium whitespace-nowrap">
+                        <i class="fas fa-pray mr-2"></i>Zikr Counter
+                    </button>
+                    <button onclick="showSection('bookmarks')" class="nav-btn py-4 px-2 border-b-2 border-transparent text-gray-500 hover:text-gray-700 font-medium whitespace-nowrap">
+                        <i class="fas fa-bookmark mr-2"></i>Bookmarks
+                    </button>
+                </div>
+            </div>
+        </nav>
+
+        <!-- Dashboard Section -->
+        <div id="dashboardSection" class="section-content">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                <div class="mb-8">
+                    <h2 class="text-3xl font-bold text-gray-900 mb-2">Assalamu Alaikum, <span id="userName">Brother</span></h2>
+                    <p class="text-gray-600">May Allah bless your day with peace and guidance</p>
+                </div>
+
+                <!-- Prayer Times Card -->
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
+                    <div class="lg:col-span-2">
+                        <div class="bg-white rounded-xl shadow-lg p-6 fade-in">
+                            <h3 class="text-xl font-semibold text-gray-900 mb-4 flex items-center">
+                                <i class="fas fa-clock text-blue-600 mr-3"></i>Today's Prayer Times
+                            </h3>
+                            <div class="grid grid-cols-2 md:grid-cols-5 gap-4">
+                                <div class="text-center p-3 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg">
+                                    <div class="text-sm font-medium text-gray-600 mb-1">Fajr</div>
+                                    <div class="text-lg font-bold text-blue-600">5:30 AM</div>
+                                </div>
+                                <div class="text-center p-3 bg-gradient-to-br from-yellow-50 to-orange-50 rounded-lg">
+                                    <div class="text-sm font-medium text-gray-600 mb-1">Dhuhr</div>
+                                    <div class="text-lg font-bold text-orange-600">12:45 PM</div>
+                                </div>
+                                <div class="text-center p-3 bg-gradient-to-br from-green-50 to-emerald-50 rounded-lg">
+                                    <div class="text-sm font-medium text-gray-600 mb-1">Asr</div>
+                                    <div class="text-lg font-bold text-green-600">4:20 PM</div>
+                                </div>
+                                <div class="text-center p-3 bg-gradient-to-br from-red-50 to-pink-50 rounded-lg">
+                                    <div class="text-sm font-medium text-gray-600 mb-1">Maghrib</div>
+                                    <div class="text-lg font-bold text-red-600">6:55 PM</div>
+                                </div>
+                                <div class="text-center p-3 bg-gradient-to-br from-purple-50 to-indigo-50 rounded-lg">
+                                    <div class="text-sm font-medium text-gray-600 mb-1">Isha</div>
+                                    <div class="text-lg font-bold text-purple-600">8:30 PM</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Quick Zikr -->
+                    <div class="bg-white rounded-xl shadow-lg p-6 fade-in">
+                        <h3 class="text-xl font-semibold text-gray-900 mb-4 flex items-center">
+                            <i class="fas fa-pray text-green-600 mr-3"></i>Quick Zikr
+                        </h3>
+                        <div class="text-center">
+                            <div class="text-3xl font-bold text-green-600 mb-2" id="quickZikrCount">0</div>
+                            <button onclick="incrementQuickZikr()" 
+                                    class="w-full bg-gradient-to-r from-green-500 to-emerald-500 text-white py-3 rounded-lg font-medium hover:from-green-600 hover:to-emerald-600 transition-all counter-button pulse-gentle">
+                                SubhanAllah
+                            </button>
+                            <button onclick="resetQuickZikr()" class="text-sm text-gray-500 hover:text-gray-700 mt-2">Reset</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Daily Quote -->
+                <div class="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-xl shadow-lg p-8 text-white mb-8 fade-in">
+                    <h3 class="text-xl font-semibold mb-4 flex items-center">
+                        <i class="fas fa-quote-left mr-3"></i>Daily Inspiration
+                    </h3>
+                    <div id="dailyQuote" class="quote-card">
+                        <p class="text-lg mb-4 leading-relaxed">"The believer is not one who eats his fill while his neighbor goes hungry."</p>
+                        <p class="text-blue-200">— Prophet Muhammad ﷺ</p>
+                    </div>
+                    <button onclick="getNewQuote()" class="mt-4 bg-white bg-opacity-20 hover:bg-opacity-30 px-4 py-2 rounded-lg transition-all">
+                        <i class="fas fa-refresh mr-2"></i>New Quote
+                    </button>
+                </div>
+
+                <!-- Reading Progress -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <div class="bg-white rounded-xl shadow-lg p-6 fade-in">
+                        <h3 class="text-xl font-semibold text-gray-900 mb-4 flex items-center">
+                            <i class="fas fa-book text-green-600 mr-3"></i>Quran Progress
+                        </h3>
+                        <div class="mb-4">
+                            <div class="flex justify-between text-sm text-gray-600 mb-2">
+                                <span>Current: Surah Al-Baqarah</span>
+                                <span>2.5%</span>
+                            </div>
+                            <div class="w-full bg-gray-200 rounded-full h-2">
+                                <div class="bg-gradient-to-r from-green-500 to-emerald-500 h-2 rounded-full" style="width: 2.5%"></div>
+                            </div>
+                        </div>
+                        <button onclick="showSection('quran')" class="text-green-600 hover:text-green-700 font-medium">
+                            Continue Reading →
+                        </button>
+                    </div>
+
+                    <div class="bg-white rounded-xl shadow-lg p-6 fade-in">
+                        <h3 class="text-xl font-semibold text-gray-900 mb-4 flex items-center">
+                            <i class="fas fa-star text-yellow-500 mr-3"></i>Today's Goals
+                        </h3>
+                        <div class="space-y-3">
+                            <div class="flex items-center">
+                                <input type="checkbox" class="mr-3 rounded text-green-600">
+                                <span class="text-gray-700">Read 5 verses of Quran</span>
+                            </div>
+                            <div class="flex items-center">
+                                <input type="checkbox" class="mr-3 rounded text-green-600">
+                                <span class="text-gray-700">Complete 100 Tasbih</span>
+                            </div>
+                            <div class="flex items-center">
+                                <input type="checkbox" class="mr-3 rounded text-green-600">
+                                <span class="text-gray-700">Read 1 Hadith</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Quran Section -->
+        <div id="quranSection" class="section-content hidden">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                <div class="flex flex-col lg:flex-row gap-8">
+                    <!-- Surah List -->
+                    <div class="lg:w-1/3">
+                        <div class="bg-white rounded-xl shadow-lg p-6 sticky top-24">
+                            <div class="flex justify-between items-center mb-4">
+                                <h3 class="text-xl font-semibold text-gray-900">Surahs</h3>
+                                <button onclick="toggleTranslation()" id="translationToggle" 
+                                        class="text-sm bg-blue-100 text-blue-700 px-3 py-1 rounded-full hover:bg-blue-200 transition-colors">
+                                    Show Translation
+                                </button>
+                            </div>
+                            <div class="mb-4">
+                                <input type="text" id="quranSearch" placeholder="Search Quran..." 
+                                       class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                       oninput="searchQuran()">
+                            </div>
+                            <div id="surahList" class="space-y-2 max-h-96 overflow-y-auto">
+                                <!-- Surah list will be populated by JavaScript -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Quran Reader -->
+                    <div class="lg:w-2/3">
+                        <div class="bg-white rounded-xl shadow-lg p-8">
+                            <div class="text-center mb-8">
+                                <h2 id="currentSurahTitle" class="text-2xl font-bold text-gray-900 mb-2">Al-Fatiha (The Opening)</h2>
+                                <p class="text-gray-600">Surah 1 • 7 verses • Meccan</p>
+                            </div>
+                            
+                            <div class="text-center mb-8">
+                                <p class="font-arabic text-2xl text-gray-800 mb-4 rtl leading-loose">بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ</p>
+                                <p class="text-gray-600 italic translation-text hidden">In the name of Allah, the Entirely Merciful, the Especially Merciful.</p>
+                            </div>
+
+                            <div id="quranVerses" class="space-y-6">
+                                <!-- Verses will be populated by JavaScript -->
+                            </div>
+
+                            <div class="flex justify-between items-center mt-8 pt-6 border-t border-gray-200">
+                                <button onclick="previousSurah()" class="flex items-center text-blue-600 hover:text-blue-700 font-medium">
+                                    <i class="fas fa-chevron-left mr-2"></i>Previous
+                                </button>
+                                <div class="text-sm text-gray-500">
+                                    <span id="currentSurahNumber">1</span> of 114
+                                </div>
+                                <button onclick="nextSurah()" class="flex items-center text-blue-600 hover:text-blue-700 font-medium">
+                                    Next<i class="fas fa-chevron-right ml-2"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Hadith Section -->
+        <div id="hadithSection" class="section-content hidden">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                <div class="flex flex-col lg:flex-row gap-8">
+                    <!-- Hadith Categories -->
+                    <div class="lg:w-1/3">
+                        <div class="bg-white rounded-xl shadow-lg p-6 sticky top-24">
+                            <h3 class="text-xl font-semibold text-gray-900 mb-4">Collections</h3>
+                            <div class="mb-4">
+                                <input type="text" id="hadithSearch" placeholder="Search Hadith..." 
+                                       class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                                       oninput="searchHadith()">
+                            </div>
+                            <div class="space-y-2">
+                                <button onclick="filterHadith('all')" class="hadith-filter w-full text-left p-3 rounded-lg bg-green-100 text-green-700 font-medium">
+                                    All Hadith (200+)
+                                </button>
+                                <button onclick="filterHadith('bukhari')" class="hadith-filter w-full text-left p-3 rounded-lg hover:bg-gray-100 text-gray-700">
+                                    Sahih Bukhari (50)
+                                </button>
+                                <button onclick="filterHadith('muslim')" class="hadith-filter w-full text-left p-3 rounded-lg hover:bg-gray-100 text-gray-700">
+                                    Sahih Muslim (50)
+                                </button>
+                                <button onclick="filterHadith('tirmidhi')" class="hadith-filter w-full text-left p-3 rounded-lg hover:bg-gray-100 text-gray-700">
+                                    Jami' Tirmidhi (40)
+                                </button>
+                                <button onclick="filterHadith('dawud')" class="hadith-filter w-full text-left p-3 rounded-lg hover:bg-gray-100 text-gray-700">
+                                    Sunan Abu Dawud (35)
+                                </button>
+                                <button onclick="filterHadith('nasai')" class="hadith-filter w-full text-left p-3 rounded-lg hover:bg-gray-100 text-gray-700">
+                                    Sunan an-Nasa'i (25)
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Hadith List -->
+                    <div class="lg:w-2/3">
+                        <div class="space-y-6" id="hadithList">
+                            <!-- Hadith will be populated by JavaScript -->
+                        </div>
+                        <div class="text-center mt-8">
+                            <button onclick="loadMoreHadith()" id="loadMoreBtn" 
+                                    class="bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 transition-colors">
+                                Load More Hadith
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Zikr Counter Section -->
+        <div id="zikrSection" class="section-content hidden">
+            <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                <div class="text-center mb-8">
+                    <h2 class="text-3xl font-bold text-gray-900 mb-4">Zikr Counter</h2>
+                    <p class="text-gray-600">Keep track of your daily remembrance of Allah</p>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                    <!-- Main Counter -->
+                    <div class="lg:col-span-2">
+                        <div class="bg-white rounded-xl shadow-lg p-8 text-center">
+                            <div class="mb-8">
+                                <h3 id="currentZikrText" class="text-2xl font-semibold text-gray-900 mb-4">SubhanAllah</h3>
+                                <div class="text-6xl font-bold text-green-600 mb-6" id="zikrCount">0</div>
+                                <div class="text-gray-600 mb-6">
+                                    Target: <span id="zikrTarget">33</span> | Remaining: <span id="zikrRemaining">33</span>
+                                </div>
+                                <div class="w-full bg-gray-200 rounded-full h-3 mb-6">
+                                    <div id="zikrProgress" class="bg-gradient-to-r from-green-500 to-emerald-500 h-3 rounded-full transition-all duration-300" style="width: 0%"></div>
+                                </div>
+                            </div>
+
+                            <div class="space-y-4">
+                                <button onclick="incrementZikr()" 
+                                        class="w-full bg-gradient-to-r from-green-500 to-emerald-500 text-white py-6 rounded-xl text-xl font-semibold hover:from-green-600 hover:to-emerald-600 transition-all counter-button pulse-gentle">
+                                    <i class="fas fa-plus mr-3"></i>Count
+                                </button>
+                                <div class="flex space-x-4">
+                                    <button onclick="resetZikr()" 
+                                            class="flex-1 bg-gray-500 text-white py-3 rounded-lg hover:bg-gray-600 transition-colors">
+                                        <i class="fas fa-undo mr-2"></i>Reset
+                                    </button>
+                                    <button onclick="showTargetModal()" 
+                                            class="flex-1 bg-blue-500 text-white py-3 rounded-lg hover:bg-blue-600 transition-colors">
+                                        <i class="fas fa-target mr-2"></i>Set Target
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Zikr Options & History -->
+                    <div class="space-y-6">
+                        <div class="bg-white rounded-xl shadow-lg p-6">
+                            <h3 class="text-lg font-semibold text-gray-900 mb-4">Zikr Options</h3>
+                            <div class="space-y-2">
+                                <button onclick="setZikr('SubhanAllah', 33)" class="zikr-option w-full text-left p-3 rounded-lg bg-green-100 text-green-700 font-medium">
+                                    SubhanAllah (33)
+                                </button>
+                                <button onclick="setZikr('Alhamdulillah', 33)" class="zikr-option w-full text-left p-3 rounded-lg hover:bg-gray-100 text-gray-700">
+                                    Alhamdulillah (33)
+                                </button>
+                                <button onclick="setZikr('Allahu Akbar', 34)" class="zikr-option w-full text-left p-3 rounded-lg hover:bg-gray-100 text-gray-700">
+                                    Allahu Akbar (34)
+                                </button>
+                                <button onclick="setZikr('La ilaha illa Allah', 100)" class="zikr-option w-full text-left p-3 rounded-lg hover:bg-gray-100 text-gray-700">
+                                    La ilaha illa Allah (100)
+                                </button>
+                                <button onclick="setZikr('Astaghfirullah', 100)" class="zikr-option w-full text-left p-3 rounded-lg hover:bg-gray-100 text-gray-700">
+                                    Astaghfirullah (100)
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="bg-white rounded-xl shadow-lg p-6">
+                            <h3 class="text-lg font-semibold text-gray-900 mb-4">Today's Progress</h3>
+                            <div id="dailyProgress" class="space-y-3">
+                                <!-- Daily progress will be populated by JavaScript -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Bookmarks Section -->
+        <div id="bookmarksSection" class="section-content hidden">
+            <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                <div class="mb-8">
+                    <h2 class="text-3xl font-bold text-gray-900 mb-4">My Bookmarks</h2>
+                    <p class="text-gray-600">Your saved verses, hadith, and quotes</p>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                    <div class="lg:col-span-2">
+                        <div id="bookmarksList" class="space-y-6">
+                            <!-- Bookmarks will be populated by JavaScript -->
+                        </div>
+                    </div>
+
+                    <div class="space-y-6">
+                        <div class="bg-white rounded-xl shadow-lg p-6">
+                            <h3 class="text-lg font-semibold text-gray-900 mb-4">Export Options</h3>
+                            <div class="space-y-3">
+                                <button onclick="exportBookmarks('json')" 
+                                        class="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition-colors">
+                                    <i class="fas fa-download mr-2"></i>Export as JSON
+                                </button>
+                                <button onclick="exportBookmarks('text')" 
+                                        class="w-full bg-green-600 text-white py-2 rounded-lg hover:bg-green-700 transition-colors">
+                                    <i class="fas fa-file-text mr-2"></i>Export as Text
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="bg-white rounded-xl shadow-lg p-6">
+                            <h3 class="text-lg font-semibold text-gray-900 mb-4">Statistics</h3>
+                            <div class="space-y-3">
+                                <div class="flex justify-between">
+                                    <span class="text-gray-600">Total Bookmarks:</span>
+                                    <span id="totalBookmarks" class="font-semibold">0</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-600">Quran Verses:</span>
+                                    <span id="quranBookmarks" class="font-semibold">0</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-600">Hadith:</span>
+                                    <span id="hadithBookmarks" class="font-semibold">0</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Target Setting Modal -->
+    <div id="targetModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
+        <div class="bg-white rounded-xl p-6 w-full max-w-md mx-4 slide-up">
+            <h3 class="text-xl font-semibold text-gray-900 mb-4">Set Zikr Target</h3>
+            <div class="mb-4">
+                <label class="block text-gray-700 text-sm font-medium mb-2">Target Count</label>
+                <input type="number" id="targetInput" min="1" max="1000" value="33" 
+                       class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+            </div>
+            <div class="flex space-x-4">
+                <button onclick="closeTargetModal()" 
+                        class="flex-1 bg-gray-500 text-white py-3 rounded-lg hover:bg-gray-600 transition-colors">
+                    Cancel
+                </button>
+                <button onclick="setTarget()" 
+                        class="flex-1 bg-blue-500 text-white py-3 rounded-lg hover:bg-blue-600 transition-colors">
+                    Set Target
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 🔥 REPLACE THIS WITH YOUR FIREBASE CONFIG
+        const firebaseConfig = {
+            apiKey: "your-api-key-here",
+            authDomain: "your-project.firebaseapp.com",
+            projectId: "your-project-id",
+            storageBucket: "your-project.appspot.com",
+            messagingSenderId: "123456789",
+            appId: "your-app-id-here"
+        };
+
+        // Check if Firebase config is updated
+        let isFirebaseConfigured = false;
+        try {
+            if (firebaseConfig.apiKey !== "your-api-key-here" && 
+                firebaseConfig.projectId !== "your-project-id") {
+                // Initialize Firebase
+                firebase.initializeApp(firebaseConfig);
+                const auth = firebase.auth();
+                const db = firebase.firestore();
+                isFirebaseConfigured = true;
+                
+                // Hide config warning
+                document.getElementById('configStatus').style.display = 'none';
+            }
+        } catch (error) {
+            console.error('Firebase initialization error:', error);
+        }
+
+        // Global variables
+        let currentUser = null;
+        let currentSection = 'dashboard';
+        let showTranslation = false;
+        let currentSurah = 1;
+        let currentHadithFilter = 'all';
+        let hadithPage = 0;
+        let zikrData = {
+            current: 'SubhanAllah',
+            count: 0,
+            target: 33,
+            daily: {}
+        };
+
+        // Sample data
+        const islamicQuotes = [
+            "The believer is not one who eats his fill while his neighbor goes hungry.",
+            "A person is not a believer who fills his stomach while his neighbor is hungry.",
+            "The best of people are those who benefit others.",
+            "Kindness is a mark of faith, and whoever is not kind has no faith.",
+            "The strong person is not the one who can wrestle someone else down. The strong person is the one who can control himself when he is angry.",
+            "Speak good or remain silent.",
+            "The best jihad is a word of truth spoken in front of a tyrannical ruler.",
+            "He who believes in Allah and the Last Day should honor his guest.",
+            "A good word is charity.",
+            "The most beloved of people to Allah are those who are most beneficial to people."
+        ];
+
+        const surahs = [
+            { number: 1, name: "Al-Fatiha", translation: "The Opening", verses: 7, type: "Meccan" },
+            { number: 2, name: "Al-Baqarah", translation: "The Cow", verses: 286, type: "Medinan" },
+            { number: 3, name: "Ali 'Imran", translation: "Family of Imran", verses: 200, type: "Medinan" },
+            { number: 4, name: "An-Nisa", translation: "The Women", verses: 176, type: "Medinan" },
+            { number: 5, name: "Al-Ma'idah", translation: "The Table Spread", verses: 120, type: "Medinan" },
+            { number: 6, name: "Al-An'am", translation: "The Cattle", verses: 165, type: "Meccan" },
+            { number: 7, name: "Al-A'raf", translation: "The Heights", verses: 206, type: "Meccan" }
+        ];
+
+        const sampleHadith = [
+            {
+                id: 1,
+                collection: "bukhari",
+                text: "The Prophet (ﷺ) said: 'The most beloved deed to Allah is the most regular and constant even if it were little.'",
+                reference: "Sahih Bukhari 6464"
+            },
+            {
+                id: 2,
+                collection: "muslim",
+                text: "The Prophet (ﷺ) said: 'A believer is not one who fills his stomach while his neighbor goes hungry.'",
+                reference: "Sahih Muslim 2558"
+            },
+            {
+                id: 3,
+                collection: "tirmidhi",
+                text: "The Prophet (ﷺ) said: 'The best of people are those who benefit others.'",
+                reference: "Jami' Tirmidhi 2485"
+            },
+            {
+                id: 4,
+                collection: "bukhari",
+                text: "The Prophet (ﷺ) said: 'He who believes in Allah and the Last Day should honor his guest.'",
+                reference: "Sahih Bukhari 6018"
+            },
+            {
+                id: 5,
+                collection: "muslim",
+                text: "The Prophet (ﷺ) said: 'A good word is charity.'",
+                reference: "Sahih Muslim 1009"
+            }
+        ];
+
+        // Authentication functions
+        function showSignup() {
+            document.getElementById('loginForm').classList.add('hidden');
+            document.getElementById('signupForm').classList.remove('hidden');
+        }
+
+        function showLogin() {
+            document.getElementById('signupForm').classList.add('hidden');
+            document.getElementById('loginForm').classList.remove('hidden');
+        }
+
+        async function handleLogin(event) {
+            event.preventDefault();
+            
+            if (!isFirebaseConfigured) {
+                alert('Please configure Firebase first! Check the setup instructions.');
+                return;
+            }
+
+            const email = document.getElementById('loginEmail').value;
+            const password = document.getElementById('loginPassword').value;
+
+            if (!email || !password) {
+                alert('Please fill in all fields');
+                return;
+            }
+
+            const loginBtn = document.getElementById('loginBtn');
+            const loginText = loginBtn.querySelector('.login-text');
+            const loginLoading = loginBtn.querySelector('.login-loading');
+            
+            loginText.classList.add('hidden');
+            loginLoading.classList.remove('hidden');
+            loginBtn.disabled = true;
+
+            try {
+                const userCredential = await auth.signInWithEmailAndPassword(email, password);
+                currentUser = userCredential.user;
+                
+                const userDoc = await db.collection('users').doc(currentUser.uid).get();
+                if (userDoc.exists) {
+                    currentUser.displayName = userDoc.data().name;
+                }
+                
+                showMainApp();
+            } catch (error) {
+                console.error('Login error:', error);
+                alert(getFirebaseErrorMessage(error.code));
+            } finally {
+                loginText.classList.remove('hidden');
+                loginLoading.classList.add('hidden');
+                loginBtn.disabled = false;
+            }
+        }
+
+        async function handleSignup(event) {
+            event.preventDefault();
+            
+            if (!isFirebaseConfigured) {
+                alert('Please configure Firebase first! Check the setup instructions.');
+                return;
+            }
+
+            const name = document.getElementById('signupName').value;
+            const email = document.getElementById('signupEmail').value;
+            const password = document.getElementById('signupPassword').value;
+
+            if (!name || !email || !password) {
+                alert('Please fill in all fields');
+                return;
+            }
+
+            if (password.length < 6) {
+                alert('Password must be at least 6 characters long');
+                return;
+            }
+
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!emailRegex.test(email)) {
+                alert('Please enter a valid email address');
+                return;
+            }
+
+            const signupBtn = document.getElementById('signupBtn');
+            const signupText = signupBtn.querySelector('.signup-text');
+            const signupLoading = signupBtn.querySelector('.signup-loading');
+            
+            signupText.classList.add('hidden');
+            signupLoading.classList.remove('hidden');
+            signupBtn.disabled = true;
+
+            try {
+                const userCredential = await auth.createUserWithEmailAndPassword(email, password);
+                currentUser = userCredential.user;
+                
+                await currentUser.updateProfile({
+                    displayName: name
+                });
+                
+                await db.collection('users').doc(currentUser.uid).set({
+                    name: name,
+                    email: email,
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                });
+                
+                showMainApp();
+            } catch (error) {
+                console.error('Signup error:', error);
+                alert(getFirebaseErrorMessage(error.code));
+            } finally {
+                signupText.classList.remove('hidden');
+                signupLoading.classList.add('hidden');
+                signupBtn.disabled = false;
+            }
+        }
+
+        function getFirebaseErrorMessage(errorCode) {
+            switch (errorCode) {
+                case 'auth/user-not-found':
+                    return 'No user found with this email address.';
+                case 'auth/wrong-password':
+                    return 'Incorrect password.';
+                case 'auth/email-already-in-use':
+                    return 'An account with this email already exists.';
+                case 'auth/weak-password':
+                    return 'Password should be at least 6 characters.';
+                case 'auth/invalid-email':
+                    return 'Invalid email address.';
+                case 'auth/too-many-requests':
+                    return 'Too many failed attempts. Please try again later.';
+                default:
+                    return 'An error occurred. Please try again.';
+            }
+        }
+
+        function showMainApp() {
+            document.getElementById('authSection').classList.add('hidden');
+            document.getElementById('mainApp').classList.remove('hidden');
+            
+            const displayName = currentUser.displayName || currentUser.email.split('@')[0];
+            document.getElementById('userName').textContent = displayName.split(' ')[0];
+            
+            if (isFirebaseConfigured) {
+                loadUserData();
+            } else {
+                loadLocalData();
+            }
+            initializeApp();
+        }
+
+        async function logout() {
+            try {
+                if (isFirebaseConfigured) {
+                    await auth.signOut();
+                }
+                currentUser = null;
+                document.getElementById('mainApp').classList.add('hidden');
+                document.getElementById('authSection').classList.remove('hidden');
+                
+                document.getElementById('loginForm').classList.remove('hidden');
+                document.getElementById('signupForm').classList.add('hidden');
+                document.querySelectorAll('input').forEach(input => input.value = '');
+            } catch (error) {
+                console.error('Logout error:', error);
+                alert('Error signing out. Please try again.');
+            }
+        }
+
+        // Navigation functions
+        function showSection(sectionName) {
+            document.querySelectorAll('.section-content').forEach(section => {
+                section.classList.add('hidden');
+            });
+            
+            document.getElementById(sectionName + 'Section').classList.remove('hidden');
+            
+            document.querySelectorAll('.nav-btn').forEach(btn => {
+                btn.classList.remove('border-blue-500', 'text-blue-600');
+                btn.classList.add('border-transparent', 'text-gray-500');
+            });
+            
+            event.target.classList.remove('border-transparent', 'text-gray-500');
+            event.target.classList.add('border-blue-500', 'text-blue-600');
+            
+            currentSection = sectionName;
+            
+            if (sectionName === 'quran') {
+                initializeQuran();
+            } else if (sectionName === 'hadith') {
+                initializeHadith();
+            } else if (sectionName === 'zikr') {
+                initializeZikr();
+            } else if (sectionName === 'bookmarks') {
+                initializeBookmarks();
+            }
+        }
+
+        // Dark mode toggle
+        function toggleDarkMode() {
+            document.body.classList.toggle('dark');
+            const icon = document.getElementById('darkModeIcon');
+            if (document.body.classList.contains('dark')) {
+                icon.classList.remove('fa-moon');
+                icon.classList.add('fa-sun');
+                localStorage.setItem('darkMode', 'true');
+            } else {
+                icon.classList.remove('fa-sun');
+                icon.classList.add('fa-moon');
+                localStorage.setItem('darkMode', 'false');
+            }
+        }
+
+        // Quote functions
+        function getNewQuote() {
+            const randomQuote = islamicQuotes[Math.floor(Math.random() * islamicQuotes.length)];
+            document.getElementById('dailyQuote').innerHTML = `
+                <p class="text-lg mb-4 leading-relaxed">"${randomQuote}"</p>
+                <p class="text-blue-200">— Prophet Muhammad ﷺ</p>
+            `;
+        }
+
+        // Quick Zikr functions
+        let quickZikrCount = 0;
+
+        function incrementQuickZikr() {
+            quickZikrCount++;
+            document.getElementById('quickZikrCount').textContent = quickZikrCount;
+            saveUserData();
+        }
+
+        function resetQuickZikr() {
+            quickZikrCount = 0;
+            document.getElementById('quickZikrCount').textContent = quickZikrCount;
+            saveUserData();
+        }
+
+        // Quran functions
+        function initializeQuran() {
+            populateSurahList();
+            loadSurah(currentSurah);
+        }
+
+        function populateSurahList() {
+            const surahList = document.getElementById('surahList');
+            surahList.innerHTML = surahs.map(surah => `
+                <button onclick="loadSurah(${surah.number})" 
+                        class="surah-item w-full text-left p-3 rounded-lg hover:bg-blue-50 transition-colors ${surah.number === currentSurah ? 'bg-blue-100 text-blue-700' : 'text-gray-700'}">
+                    <div class="flex justify-between items-center">
+                        <div>
+                            <div class="font-medium">${surah.number}. ${surah.name}</div>
+                            <div class="text-sm text-gray-500">${surah.translation}</div>
+                        </div>
+                        <div class="text-sm text-gray-400">${surah.verses} verses</div>
+                    </div>
+                </button>
+            `).join('');
+        }
+
+        function loadSurah(surahNumber) {
+            currentSurah = surahNumber;
+            const surah = surahs.find(s => s.number === surahNumber);
+            
+            if (surah) {
+                document.getElementById('currentSurahTitle').textContent = `${surah.name} (${surah.translation})`;
+                document.getElementById('currentSurahNumber').textContent = surahNumber;
+                
+                document.querySelectorAll('.surah-item').forEach(item => {
+                    item.classList.remove('bg-blue-100', 'text-blue-700');
+                    item.classList.add('text-gray-700');
+                });
+                
+                if (surahNumber === 1) {
+                    loadFatihaVerses();
+                } else {
+                    loadSampleVerses(surah);
+                }
+            }
+            
+            populateSurahList();
+        }
+
+        function loadFatihaVerses() {
+            const verses = [
+                {
+                    arabic: "الْحَمْدُ لِلَّهِ رَبِّ الْعَالَمِينَ",
+                    translation: "All praise is due to Allah, Lord of the worlds."
+                },
+                {
+                    arabic: "الرَّحْمَٰنِ الرَّحِيمِ",
+                    translation: "The Entirely Merciful, the Especially Merciful."
+                },
+                {
+                    arabic: "مَالِكِ يَوْمِ الدِّينِ",
+                    translation: "Sovereign of the Day of Recompense."
+                },
+                {
+                    arabic: "إِيَّاكَ نَعْبُدُ وَإِيَّاكَ نَسْتَعِينُ",
+                    translation: "It is You we worship and You we ask for help."
+                },
+                {
+                    arabic: "اهْدِنَا الصِّرَاطَ الْمُسْتَقِيمَ",
+                    translation: "Guide us to the straight path."
+                },
+                {
+                    arabic: "صِرَاطَ الَّذِينَ أَنْعَمْتَ عَلَيْهِمْ غَيْرِ الْمَغْضُوبِ عَلَيْهِمْ وَلَا الضَّالِّينَ",
+                    translation: "The path of those upon whom You have bestowed favor, not of those who have evoked [Your] anger or of those who are astray."
+                }
+            ];
+
+            displayVerses(verses);
+        }
+
+        function loadSampleVerses(surah) {
+            const sampleVerses = [
+                {
+                    arabic: "هَٰذَا كِتَابٌ لَا رَيْبَ فِيهِ هُدًى لِلْمُتَّقِينَ",
+                    translation: "This is the Book about which there is no doubt, a guidance for those conscious of Allah."
+                },
+                {
+                    arabic: "الَّذِينَ يُؤْمِنُونَ بِالْغَيْبِ وَيُقِيمُونَ الصَّلَاةَ وَمِمَّا رَزَقْنَاهُمْ يُنْفِقُونَ",
+                    translation: "Who believe in the unseen, establish prayer, and spend out of what We have provided for them."
+                }
+            ];
+
+            displayVerses(sampleVerses);
+        }
+
+        function displayVerses(verses) {
+            const versesContainer = document.getElementById('quranVerses');
+            versesContainer.innerHTML = verses.map((verse, index) => `
+                <div class="verse-container border-l-4 border-green-500 pl-6 py-4">
+                    <div class="flex justify-between items-start mb-3">
+                        <span class="bg-green-100 text-green-700 text-sm px-2 py-1 rounded-full">${index + 1}</span>
+                        <button onclick="bookmarkVerse(${currentSurah}, ${index + 1})" class="text-gray-400 hover:text-yellow-500 transition-colors">
+                            <i class="fas fa-bookmark"></i>
+                        </button>
+                    </div>
+                    <p class="font-arabic text-2xl text-gray-800 mb-4 rtl leading-loose">${verse.arabic}</p>
+                    <p class="text-gray-600 italic translation-text ${showTranslation ? '' : 'hidden'}">${verse.translation}</p>
+                </div>
+            `).join('');
+        }
+
+        function toggleTranslation() {
+            showTranslation = !showTranslation;
+            const translationTexts = document.querySelectorAll('.translation-text');
+            const toggleBtn = document.getElementById('translationToggle');
+            
+            translationTexts.forEach(text => {
+                if (showTranslation) {
+                    text.classList.remove('hidden');
+                } else {
+                    text.classList.add('hidden');
+                }
+            });
+            
+            toggleBtn.textContent = showTranslation ? 'Hide Translation' : 'Show Translation';
+        }
+
+        function searchQuran() {
+            const searchTerm = document.getElementById('quranSearch').value.toLowerCase();
+            const surahItems = document.querySelectorAll('.surah-item');
+            
+            surahItems.forEach(item => {
+                const text = item.textContent.toLowerCase();
+                if (text.includes(searchTerm)) {
+                    item.style.display = 'block';
+                } else {
+                    item.style.display = 'none';
+                }
+            });
+        }
+
+        function previousSurah() {
+            if (currentSurah > 1) {
+                loadSurah(currentSurah - 1);
+            }
+        }
+
+        function nextSurah() {
+            if (currentSurah < surahs.length) {
+                loadSurah(currentSurah + 1);
+            }
+        }
+
+        // Hadith functions
+        function initializeHadith() {
+            loadHadith();
+        }
+
+        function loadHadith() {
+            const hadithList = document.getElementById('hadithList');
+            const filteredHadith = currentHadithFilter === 'all' 
+                ? sampleHadith 
+                : sampleHadith.filter(h => h.collection === currentHadithFilter);
+            
+            hadithList.innerHTML = filteredHadith.map(hadith => `
+                <div class="bg-white rounded-xl shadow-lg p-6 fade-in">
+                    <div class="flex justify-between items-start mb-4">
+                        <span class="bg-green-100 text-green-700 text-sm px-3 py-1 rounded-full capitalize">${hadith.collection}</span>
+                        <button onclick="bookmarkHadith(${hadith.id})" class="text-gray-400 hover:text-yellow-500 transition-colors">
+                            <i class="fas fa-bookmark"></i>
+                        </button>
+                    </div>
+                    <p class="text-gray-800 leading-relaxed mb-4">${hadith.text}</p>
+                    <p class="text-sm text-gray-500">${hadith.reference}</p>
+                </div>
+            `).join('');
+        }
+
+        function filterHadith(collection) {
+            currentHadithFilter = collection;
+            
+            document.querySelectorAll('.hadith-filter').forEach(btn => {
+                btn.classList.remove('bg-green-100', 'text-green-700');
+                btn.classList.add('hover:bg-gray-100', 'text-gray-700');
+            });
+            
+            event.target.classList.remove('hover:bg-gray-100', 'text-gray-700');
+            event.target.classList.add('bg-green-100', 'text-green-700');
+            
+            loadHadith();
+        }
+
+        function searchHadith() {
+            const searchTerm = document.getElementById('hadithSearch').value.toLowerCase();
+            const hadithCards = document.querySelectorAll('#hadithList > div');
+            
+            hadithCards.forEach(card => {
+                const text = card.textContent.toLowerCase();
+                if (text.includes(searchTerm)) {
+                    card.style.display = 'block';
+                } else {
+                    card.style.display = 'none';
+                }
+            });
+        }
+
+        function loadMoreHadith() {
+            alert('More hadith would be loaded from your data source. This is a demo version.');
+        }
+
+        // Zikr Counter functions
+        function initializeZikr() {
+            updateZikrDisplay();
+            updateDailyProgress();
+        }
+
+        function setZikr(text, target) {
+            zikrData.current = text;
+            zikrData.target = target;
+            zikrData.count = 0;
+            
+            document.querySelectorAll('.zikr-option').forEach(btn => {
+                btn.classList.remove('bg-green-100', 'text-green-700');
+                btn.classList.add('hover:bg-gray-100', 'text-gray-700');
+            });
+            
+            event.target.classList.remove('hover:bg-gray-100', 'text-gray-700');
+            event.target.classList.add('bg-green-100', 'text-green-700');
+            
+            updateZikrDisplay();
+            saveUserData();
+        }
+
+        function incrementZikr() {
+            zikrData.count++;
+            updateZikrDisplay();
+            updateDailyProgress();
+            saveUserData();
+            
+            if (zikrData.count === zikrData.target) {
+                setTimeout(() => {
+                    alert('🎉 Alhamdulillah! You have completed your zikr target!');
+                }, 100);
+            }
+        }
+
+        function resetZikr() {
+            zikrData.count = 0;
+            updateZikrDisplay();
+            saveUserData();
+        }
+
+        function updateZikrDisplay() {
+            document.getElementById('currentZikrText').textContent = zikrData.current;
+            document.getElementById('zikrCount').textContent = zikrData.count;
+            document.getElementById('zikrTarget').textContent = zikrData.target;
+            document.getElementById('zikrRemaining').textContent = Math.max(0, zikrData.target - zikrData.count);
+            
+            const progress = Math.min(100, (zikrData.count / zikrData.target) * 100);
+            document.getElementById('zikrProgress').style.width = progress + '%';
+        }
+
+        function showTargetModal() {
+            document.getElementById('targetModal').classList.remove('hidden');
+            document.getElementById('targetModal').classList.add('flex');
+            document.getElementById('targetInput').value = zikrData.target;
+        }
+
+        function closeTargetModal() {
+            document.getElementById('targetModal').classList.add('hidden');
+            document.getElementById('targetModal').classList.remove('flex');
+        }
+
+        function setTarget() {
+            const newTarget = parseInt(document.getElementById('targetInput').value);
+            if (newTarget > 0) {
+                zikrData.target = newTarget;
+                updateZikrDisplay();
+                saveUserData();
+                closeTargetModal();
+            }
+        }
+
+        function updateDailyProgress() {
+            const today = new Date().toDateString();
+            if (!zikrData.daily[today]) {
+                zikrData.daily[today] = {};
+            }
+            zikrData.daily[today][zikrData.current] = zikrData.count;
+            
+            const progressContainer = document.getElementById('dailyProgress');
+            const todayData = zikrData.daily[today];
+            
+            progressContainer.innerHTML = Object.entries(todayData).map(([zikr, count]) => `
+                <div class="flex justify-between items-center">
+                    <span class="text-sm text-gray-600">${zikr}:</span>
+                    <span class="font-semibold text-green-600">${count}</span>
+                </div>
+            `).join('');
+        }
+
+        // Bookmark functions
+        let bookmarks = [];
+
+        function initializeBookmarks() {
+            displayBookmarks();
+            updateBookmarkStats();
+        }
+
+        function bookmarkVerse(surahNumber, verseNumber) {
+            const bookmark = {
+                id: Date.now(),
+                type: 'verse',
+                surah: surahNumber,
+                verse: verseNumber,
+                text: `Surah ${surahNumber}, Verse ${verseNumber}`,
+                timestamp: new Date().toISOString()
+            };
+            
+            bookmarks.push(bookmark);
+            saveUserData();
+            
+            event.target.classList.remove('text-gray-400');
+            event.target.classList.add('text-yellow-500');
+            
+            setTimeout(() => {
+                alert('Verse bookmarked successfully!');
+            }, 100);
+        }
+
+        function bookmarkHadith(hadithId) {
+            const hadith = sampleHadith.find(h => h.id === hadithId);
+            if (hadith) {
+                const bookmark = {
+                    id: Date.now(),
+                    type: 'hadith',
+                    hadithId: hadithId,
+                    text: hadith.text.substring(0, 100) + '...',
+                    reference: hadith.reference,
+                    timestamp: new Date().toISOString()
+                };
+                
+                bookmarks.push(bookmark);
+                saveUserData();
+                
+                event.target.classList.remove('text-gray-400');
+                event.target.classList.add('text-yellow-500');
+                
+                setTimeout(() => {
+                    alert('Hadith bookmarked successfully!');
+                }, 100);
+            }
+        }
+
+        function displayBookmarks() {
+            const bookmarksList = document.getElementById('bookmarksList');
+            
+            if (bookmarks.length === 0) {
+                bookmarksList.innerHTML = `
+                    <div class="text-center py-12">
+                        <i class="fas fa-bookmark text-gray-300 text-4xl mb-4"></i>
+                        <p class="text-gray-500">No bookmarks yet. Start bookmarking your favorite verses and hadith!</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            bookmarksList.innerHTML = bookmarks.map(bookmark => `
+                <div class="bg-white rounded-xl shadow-lg p-6 fade-in">
+                    <div class="flex justify-between items-start mb-4">
+                        <span class="bg-blue-100 text-blue-700 text-sm px-3 py-1 rounded-full capitalize">${bookmark.type}</span>
+                        <button onclick="removeBookmark(${bookmark.id})" class="text-red-400 hover:text-red-600 transition-colors">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                    <p class="text-gray-800 mb-3">${bookmark.text}</p>
+                    ${bookmark.reference ? `<p class="text-sm text-gray-500 mb-2">${bookmark.reference}</p>` : ''}
+                    <p class="text-xs text-gray-400">Saved on ${new Date(bookmark.timestamp).toLocaleDateString()}</p>
+                </div>
+            `).join('');
+        }
+
+        function removeBookmark(bookmarkId) {
+            if (confirm('Are you sure you want to remove this bookmark?')) {
+                bookmarks = bookmarks.filter(b => b.id !== bookmarkId);
+                saveUserData();
+                displayBookmarks();
+                updateBookmarkStats();
+            }
+        }
+
+        function updateBookmarkStats() {
+            const total = bookmarks.length;
+            const quranCount = bookmarks.filter(b => b.type === 'verse').length;
+            const hadithCount = bookmarks.filter(b => b.type === 'hadith').length;
+            
+            document.getElementById('totalBookmarks').textContent = total;
+            document.getElementById('quranBookmarks').textContent = quranCount;
+            document.getElementById('hadithBookmarks').textContent = hadithCount;
+        }
+
+        function exportBookmarks(format) {
+            if (bookmarks.length === 0) {
+                alert('No bookmarks to export');
+                return;
+            }
+            
+            let content, filename, mimeType;
+            
+            if (format === 'json') {
+                content = JSON.stringify(bookmarks, null, 2);
+                filename = 'islamic-bookmarks.json';
+                mimeType = 'application/json';
+            } else {
+                content = bookmarks.map(b => `${b.type.toUpperCase()}: ${b.text}\n${b.reference || ''}\nSaved: ${new Date(b.timestamp).toLocaleDateString()}\n\n`).join('');
+                filename = 'islamic-bookmarks.txt';
+                mimeType = 'text/plain';
+            }
+            
+            const blob = new Blob([content], { type: mimeType });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        // Data persistence functions
+        async function saveUserData() {
+            if (isFirebaseConfigured && currentUser) {
+                try {
+                    const userData = {
+                        quickZikrCount: quickZikrCount,
+                        zikrData: zikrData,
+                        bookmarks: bookmarks,
+                        currentSurah: currentSurah,
+                        showTranslation: showTranslation,
+                        lastUpdated: firebase.firestore.FieldValue.serverTimestamp()
+                    };
+                    
+                    await db.collection('userData').doc(currentUser.uid).set(userData, { merge: true });
+                } catch (error) {
+                    console.error('Error saving user data:', error);
+                    saveLocalData();
+                }
+            } else {
+                saveLocalData();
+            }
+        }
+
+        async function loadUserData() {
+            if (isFirebaseConfigured && currentUser) {
+                try {
+                    const userDataDoc = await db.collection('userData').doc(currentUser.uid).get();
+                    
+                    if (userDataDoc.exists) {
+                        const userData = userDataDoc.data();
+                        quickZikrCount = userData.quickZikrCount || 0;
+                        zikrData = userData.zikrData || { current: 'SubhanAllah', count: 0, target: 33, daily: {} };
+                        bookmarks = userData.bookmarks || [];
+                        currentSurah = userData.currentSurah || 1;
+                        showTranslation = userData.showTranslation || false;
+                    } else {
+                        initializeDefaultData();
+                    }
+                } catch (error) {
+                    console.error('Error loading user data:', error);
+                    loadLocalData();
+                }
+            } else {
+                loadLocalData();
+            }
+            
+            document.getElementById('quickZikrCount').textContent = quickZikrCount;
+        }
+
+        function saveLocalData() {
+            const userData = {
+                quickZikrCount: quickZikrCount,
+                zikrData: zikrData,
+                bookmarks: bookmarks,
+                currentSurah: currentSurah,
+                showTranslation: showTranslation
+            };
+            localStorage.setItem('islamicCompanionData', JSON.stringify(userData));
+        }
+
+        function loadLocalData() {
+            const userData = JSON.parse(localStorage.getItem('islamicCompanionData') || '{}');
+            quickZikrCount = userData.quickZikrCount || 0;
+            zikrData = userData.zikrData || { current: 'SubhanAllah', count: 0, target: 33, daily: {} };
+            bookmarks = userData.bookmarks || [];
+            currentSurah = userData.currentSurah || 1;
+            showTranslation = userData.showTranslation || false;
+        }
+
+        function initializeDefaultData() {
+            quickZikrCount = 0;
+            zikrData = { current: 'SubhanAllah', count: 0, target: 33, daily: {} };
+            bookmarks = [];
+            currentSurah = 1;
+            showTranslation = false;
+        }
+
+        // Initialize app
+        function initializeApp() {
+            if (localStorage.getItem('darkMode') === 'true') {
+                document.body.classList.add('dark');
+                document.getElementById('darkModeIcon').classList.remove('fa-moon');
+                document.getElementById('darkModeIcon').classList.add('fa-sun');
+            }
+            
+            showSection('dashboard');
+            
+            if ('Notification' in window) {
+                Notification.requestPermission();
+            }
+        }
+
+        // Firebase Auth State Listener
+        if (isFirebaseConfigured) {
+            auth.onAuthStateChanged(async (user) => {
+                if (user) {
+                    currentUser = user;
+                    
+                    try {
+                        const userDoc = await db.collection('users').doc(user.uid).get();
+                        if (userDoc.exists) {
+                            currentUser.displayName = userDoc.data().name;
+                        }
+                    } catch (error) {
+                        console.error('Error fetching user data:', error);
+                    }
+                    
+                    showMainApp();
+                } else {
+                    currentUser = null;
+                    document.getElementById('mainApp').classList.add('hidden');
+                    document.getElementById('authSection').classList.remove('hidden');
+                }
+            });
+        } else {
+            // Demo mode without Firebase
+            setTimeout(() => {
+                if (confirm('Firebase is not configured. Would you like to try the demo mode?')) {
+                    currentUser = { uid: 'demo', displayName: 'Demo User', email: 'demo@example.com' };
+                    showMainApp();
+                }
+            }, 2000);
+        }
+
+        // Keyboard shortcuts
+        document.addEventListener('keydown', function(e) {
+            if (currentSection === 'zikr' && e.code === 'Space') {
+                e.preventDefault();
+                incrementZikr();
+            }
+        });
+    </script>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'96c93f6560a4a07f',t:'MTc1NDc2MzQxOC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>
